@@ -1,21 +1,32 @@
 export function generateAudio(
     context: AudioContext,
-    input: AudioBuffer
+    _input: AudioBuffer
 ): AudioBuffer {
-    const sampleRate = input.sampleRate;
-    const duration = input.duration;
-    const output = context.createBuffer(1, input.length, sampleRate);
+    const sampleRate = 44100;
+    const duration = 1;
+    const frameCount = sampleRate * duration;
 
-    const inputSamples = input.getChannelData(0);
-    const outputSamples = output.getChannelData(0);
+    const output = context.createBuffer(
+        1,
+        frameCount,
+        sampleRate
+    );
 
-    const beepDuration = 0.1;
-    const pauseDuration = 0.05;
-    const cycleDuration = beepDuration + pauseDuration;
+    const samples = output.getChannelData(0);
 
-    for (let i = 0; i < outputSamples.length; i++) {
-        
+    for (let i = 0; i < samples.length; i++) {
+        const time = i / sampleRate;
 
+        const frequency =
+            time < 0.5 ? 440 : 660;
+
+        const envelope =
+            1 - (time % 0.5) / 0.5;
+
+        samples[i] =
+            Math.sin(2 * Math.PI * frequency * time) *
+            envelope *
+            0.25;
     }
 
     return output;

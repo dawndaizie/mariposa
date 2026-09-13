@@ -1,45 +1,67 @@
-function writeText(
-    view: DataView, 
+function writeAscii(
+    view: DataView,
     offset: number,
     text: string
-) {
+): void {
     for (let i = 0; i < text.length; i++) {
-        view.setUint8(offset + i, text.charCodeAt(i));
+        view.setUint8(
+            offset + i,
+            text.charCodeAt(i)
+        );
     }
 }
 
 export function encodeWav(
     buffer: AudioBuffer
 ): Blob {
-    const channelCount = 1;
+    const channelCount = buffer.numberOfChannels;
     const sampleRate = buffer.sampleRate;
-    const samples = buffer.getChannelData(0);
-    const bytesPerSample = 2;
-    const dataSize = samples.length * bytesPerSample;
+    const frames = buffer.length;
+    const bitsPerSample = 16;
+    const bytesPerSample = bitsPerSample / 8;
+    const blockAlign = channelCount * bytesPerSample;
+    const dataSize = frames * blockAlign;
 
-    const arrayBuffer = new ArrayBuffer(44 + dataSize);
-    const view = new DataView(arrayBuffer);
+    const output = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(output);
 
-    writeText(view, 0, "RIFF");
+    writeAscii(view, 0, "RIFF");
     view.setUint32(4, 36 + dataSize, true);
-    writeText(view, 8, "WAVE");
-    writeText(view, 12, "fmt");
+    writeAscii(view, 8, "WAVE");
+
+    writeAscii(view, 12, "fmt ");
     view.setUint32(16, 16, true);
     view.setUint16(20, 1, true);
     view.setUint16(22, channelCount, true);
     view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * channelCount * bytesPerSample, true);
-    view.setUint16(32, channelCount * bytesPerSample, true);
-    view.setUint16(34, 16, true);
-    writeText(view, 36, "data");
+
+    const byteRate = sampleRate * blockAlign;
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitsPerSample, true);
+
+    writeAscii(view, 36, "data");
     view.setUint32(40, dataSize, true);
 
-    for (let i = 0; i < samples.length; i++) {
-        const sample = Math.max(-1, Math.min(1, samples[i]));
-        const integer = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+    let offset = 44;
 
-        view.setInt16(44 + i * 2, integer, true);
+    for (let frame = 0; frame < frames; frame++) {
+        for (let channel = 0; channel < channelCount; channel++) {
+            const samples = buffer.getChannelData(channel);
+            const sample = Math.max(-1, Math.min(1, samples[frame]));
+
+            const value =
+                sample < 0
+                    ? sample * 0x8000
+                    : sample * 0x7fff;
+
+            view.setInt16(offset, value, true);
+            offset += 2;
+        }
     }
-    
-    return new Blob([arrayBuffer], { type: "audio/wav" });
+
+    return new Blob([output], {
+        type: "audio/wav",
+    });
 }
+

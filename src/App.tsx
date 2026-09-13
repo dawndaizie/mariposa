@@ -36,9 +36,19 @@ function App() {
       const audioContext = new AudioContext();
 
       const inputBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      console.log("Input:", { duration: inputBuffer.duration, length: inputBuffer.length, sampleRate: inputBuffer.sampleRate, channels: inputBuffer.numberOfChannels, });
+      if (inputBuffer.length === 0) {
+        throw new Error("The input audio contains no samples.");
+      }
+
+
+
       const outputBuffer = generateAudio(audioContext, inputBuffer);
+      console.log(outputBuffer.duration);
 
       const wavBlob = encodeWav(outputBuffer);
+      console.log(wavBlob.size, wavBlob.type);
+
       const url = URL.createObjectURL(wavBlob);
 
       setResultUrl(url);
