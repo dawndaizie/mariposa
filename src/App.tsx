@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { generateAudio } from './audio/generateAudio';
 import { encodeWav } from './audio/encodeWav';
-import './App.css'
 
 
 function App() {
