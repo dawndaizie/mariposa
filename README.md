@@ -1,7 +1,4 @@
-# mariposa
+# Mariposa
 
-fun music transposer using react, typescript and web audio API
+React + TypeScript + Vite, Rust + Webassembly music transposer
 
-Eventually will use Rust + WebAssembly
-
-Upload .wav for now
